@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🐣 Compliment Clicker — Mobile ver.</title>
+<style>
+:root{
+  --cream:#f8f4ea;
+  --panel:#fff;
+  --text:#444;
+  --muted:#777;
+  --shadow:0 8px 22px rgba(0,0,0,.08);
+}
+html,body{
+  margin:0; padding:0;
+  height:100%;
+  background:var(--cream);
+  font-family:-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;
+  color:var(--text);
+  -webkit-tap-highlight-color:transparent;
+}
+.wrap{min-height:100%;display:flex;justify-content:center;align-items:center;padding:20px;}
+.card{
+  background:var(--panel);
+  box-shadow:var(--shadow);
+  border-radius:20px;
+  width:100%;
+  max-width:420px;
+  padding:28px 20px 24px;
+  text-align:center;
+  position:relative;
+  transition:transform .25s ease;
+}
+.title{font-weight:700;color:var(--muted);margin-bottom:12px;font-size:15px;}
+.msg{font-size:clamp(18px,4vw,24px);line-height:1.6;min-height:5em;user-select:none;}
+.hint{font-size:13px;color:var(--muted);margin-top:14px;}
+.bigTap{position:fixed;inset:0;background:transparent;border:none;cursor:pointer;}
+.flash{position:fixed;inset:0;display:none;place-items:center;background:rgba(255,255,255,0.85);z-index:9;}
+.flash.show{display:grid;}
+.flash .wow{font-size:clamp(60px,12vw,120px);font-weight:900;color:#111;text-shadow:0 6px 24px rgba(0,0,0,.25);animation:boom .6s cubic-bezier(.2,1,.2,1);}
+@keyframes boom{0%{transform:scale(.6);opacity:.2;}80%{transform:scale(1.08);}100%{transform:scale(1);opacity:1;}}
+.chick{
+  position:fixed;
+  font-size:clamp(60px,10vw,90px);
+  animation:fall 1.6s linear forwards;
+  pointer-events:none;
+  z-index:8;
+  filter:drop-shadow(0 6px 8px rgba(0,0,0,.15));
+}
+@keyframes fall{
+  from{transform:translateY(-10vh) rotate(0deg);opacity:.9;}
+  to{transform:translateY(110vh) rotate(30deg);opacity:0;}
+}
+.shake{animation:shake .35s ease;}
+@keyframes shake{
+  10%{transform:translateX(-3px);}
+  20%{transform:translateX(3px);}
+  40%{transform:translateX(-2px);}
+  60%{transform:translateX(2px);}
+  80%{transform:translateX(-1px);}
+  100%{transform:none;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="card">
+    <div class="title">🐣✨ Compliment Clicker — tap anywhere ☝️</div>
+    <div class="msg" id="msg">タップでふんわり褒めメッセージ。Sometimes chaos may fall 🐣</div>
+    <div class="hint">静かにしてるときほど、ほめられるチャンスが来る。</div>
+  </div>
+</div>
+
+<button class="bigTap" id="tapBtn"></button>
+<div class="flash" id="flash"><div class="wow">ワッ！</div></div>
+
+<audio id="popSound" src="pop.mp3" preload="auto"></audio>
+<audio id="wowSound" src="wow.mp3" preload="auto"></audio>
+
+<script>
+const messages = [
+  "今日もやわらかい空気してる☁️","Your brain is glowing softly. 🧠✨",
+  "ちゃんと食べて偉い。Self-care master.","You make calm look powerful. 🐣",
+  "目の奥に光がある日。That’s rare.","Your silence says more than words.",
+  "デーツ2粒？Perfect balance, monk level. 😏","Small win is still a win. 🪶",
+  "Your energy today feels like Sunday morning.","Calm is your rebellion. ☕️",
+  "That laugh just healed the timeline.","ちゃんと休めたあなた、最強。💛",
+  "思ったよりちゃんと生きてる、それだけで十分。","Soft power loading… completed. 🐣✨",
+  "Your presence feels like golden hour light.","ちゃんと『まあいいか』って言えた。えらい。",
+  "You could make chaos purr. 🐈‍⬛","眼差しで空気変わる人。Rare species."
+];
+const rare = [
+  "黄金の🐣が舞い降りた！+10 luck +5 calm ✨",
+  "Three is culture. Four is faith. (デーツ限定特典)",
+  "Horse loose in a hospital!! 🐎💥🐣💥 CHAOS MODE!",
+  "Democracy sausage unlocked 🌭 — ご褒美休憩して？",
+  "Your vibe reached orbit. NASA just waved. 🚀"
+];
+
+const tapBtn=document.getElementById('tapBtn');
+const msgEl=document.getElementById('msg');
+const card=document.getElementById('card');
+const flash=document.getElementById('flash');
+const pop=document.getElementById('popSound');
+const wow=document.getElementById('wowSound');
+
+tapBtn.addEventListener('click',next);
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'||e.code==='Enter'){e.preventDefault();next();}
+});
+
+function next(){
+  const r=Math.random();
+  if(r<0.08){
+    setMessage(pick(rare));
+    wowPrank(); sprinkleChicks(25); shake();
+    wow.currentTime=0; wow.play().catch(()=>{});
+  } else {
+    setMessage(pick(messages));
+    sprinkleChicks(15+Math.floor(Math.random()*10));
+    shake();
+    pop.currentTime=0; pop.play().catch(()=>{});
+  }
+}
+
+function setMessage(t){msgEl.textContent=t;}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function shake(){card.classList.remove('shake');void card.offsetWidth;card.classList.add('shake');}
+function wowPrank(){flash.classList.add('show');setTimeout(()=>flash.classList.remove('show'),600);}
+
+function sprinkleChicks(n=10){
+  for(let i=0;i<n;i++){
+    const s=document.createElement('div');
+    s.className='chick';
+    s.textContent=Math.random()<.5?"🐣":"🐣✨";
+    // 横方向：全幅に広く。縦方向：少しずらして自然に。
+    s.style.left=Math.random()*100+'vw';
+    s.style.top=(-10 - Math.random()*40)+'vh';
+    s.style.animationDuration=(1.5+Math.random()*1.5)+'s';
+    s.style.animationDelay=Math.random()*0.8+'s';
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),2500);
+  }
+}
+</script>
+</body>
+</html>
