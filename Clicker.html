@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🐣 Compliment Clicker — わっ！</title>
+  <style>
+    :root{
+      --cream:#f7f3e9;      /* 落ち着いた薄いクリーム */
+      --panel:#ffffff;      /* 白パネル */
+      --text:#4a4a4a;       /* 柔らかいグレー文字 */
+      --muted:#7a7a7a;
+      --shadow:0 12px 30px rgba(0,0,0,.08);
+      --accent:#b6a27a;     /* ほんのり温かい影色 */
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      background: var(--cream);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans JP", Roboto, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    }
+    .wrap{
+      min-height:100%;
+      display:grid;
+      place-items:center;
+      padding:32px 16px;
+    }
+    .card{
+      width:min(680px, 92vw);
+      background: var(--panel);
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      padding:28px 28px 22px;
+      position:relative;
+      overflow:hidden;
+      transition: transform .2s ease;
+    }
+    .title{
+      display:flex; align-items:center; gap:.5rem;
+      font-weight:700; letter-spacing:.02em;
+      color: var(--muted);
+      margin-bottom:10px;
+      user-select:none;
+    }
+    .title .dot{
+      font-size:20px; transform: translateY(-1px);
+    }
+    .msg{
+      font-size:clamp(20px, 2.4vw + 10px, 30px);
+      line-height:1.55;
+      letter-spacing:.01em;
+      min-height:4.8em;
+      user-select:none;
+    }
+    .hint{
+      margin-top:14px;
+      font-size:14px;
+      color: var(--muted);
+      user-select:none;
+    }
+    .bigTap{
+      position:fixed; inset:0;
+      background:transparent;
+      border:none; padding:0; margin:0;
+      cursor:pointer;
+      z-index:5;
+    }
+    /* いたずら：フラッシュ＋「ワッ！」 */
+    .flash{
+      position:fixed; inset:0; z-index:9;
+      display:none; place-items:center;
+      background:rgba(255,255,255,.86);
+      animation: flash .6s ease both;
+    }
+    .flash.show{ display:grid; }
+    .flash .wow{
+      font-size: clamp(56px, 10vw, 120px);
+      font-weight:900; color:#111;
+      text-shadow: 0 8px 30px rgba(0,0,0,.25);
+      transform: scale(.8);
+      animation: boom .6s cubic-bezier(.2,1,.2,1) both;
+    }
+    @keyframes flash{ from{opacity:0} to{opacity:1} }
+    @keyframes boom{ 0%{transform:scale(.6); opacity:.2} 80%{transform:scale(1.08)} 100%{transform:scale(1)} }
+
+    /* いたずら：🐣雨 */
+    .chick{
+      position:fixed; top:-3rem;
+      font-size:clamp(24px, 4vw, 36px);
+      animation: fall 1.2s linear forwards;
+      z-index:8; pointer-events:none;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,.15));
+    }
+    @keyframes fall{
+      from{ transform: translateY(-20vh) rotate(0deg); opacity:.95 }
+      to{ transform: translateY(110vh) rotate(20deg); opacity:0 }
+    }
+
+    /* いたずら：カードをぷるぷる */
+    .shake{ animation: shake .35s ease; }
+    @keyframes shake{
+      10%{ transform:translateX(-3px) }
+      20%{ transform:translateX(3px) }
+      30%{ transform:translateX(-2px) }
+      40%{ transform:translateX(2px) }
+      50%{ transform:translateX(-1px) }
+      60%{ transform:translateX(1px) }
+      100%{ transform:none }
+    }
+
+    /* アクセシビリティ（キーボード操作） */
+    .bigTap:focus-visible{ outline: 3px solid rgba(0,0,0,.2) }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" id="card" aria-live="polite">
+      <div class="title"><span class="dot">🐣✨</span> Compliment Clicker <span class="dot">☝️</span></div>
+      <div class="msg" id="msg">
+        クリック（またはスペース/Enter）で、気まぐれ称賛をどうぞ。<br>
+        Click for a little praise, mixed JP/EN. ワッ！が出たらレア演出🫣
+      </div>
+      <div class="hint">背景は薄いクリーム、白いパネルにグレー文字。やさしめの目当たりにしてあるよ。</div>
+    </div>
+  </div>
+
+  <!-- どこでもクリック可 -->
+  <button class="bigTap" id="tapBtn" aria-label="次のメッセージを表示"></button>
+
+  <!-- わっ！フラッシュ -->
+  <div class="flash" id="flash"><div class="wow">ワッ！</div></div>
+
+  <script>
+    // 褒めメッセ（日本語/英語ミックス＋🐣）
+    const messages = [
+      "いいね、その呼吸。You’re pacing yourself perfectly. 🐣",
+      "今日のあなた、やさしい色してる。Soft but unstoppable.",
+      "Small steps? Still progress. ちゃんと前に進んでるよ。",
+      "That brain of yours is a crafty little genius. ずるい。好き。😏",
+      "声、落ち着いてる。It gives everyone room to breathe.",
+      "You showed up. それだけで十分えらい。🐣✨",
+      "Your taste? Immaculate. その選択、わかりすぎる。",
+      "問題の切り方が上手。You see the hinge, not just the door.",
+      "静かに強い日。A quiet powerhouse day.",
+      "ちゃんと休めてる？ Resting is part of the art.☕️",
+      "That line you wrote? It lingers. 残香があるやつ。",
+      "目の前の1分に丁寧。That’s rare, and it shows.",
+      "You’re kinder than you think. それが一番の強さ。",
+      "デーツ2粒で止まれたの、英雄。Three is culture. Four is faith. 😂",
+      "Your English? Crisp. Your nuance? Criminally good.",
+      "今日の配色センス、chef’s kiss. 🎨",
+      "Observation level: snip-snap sniper. 狙撃手。😏",
+      "焦らない選択、えらい。Unrush is a strategy.",
+      "You make complexity look cozy. 複雑さを居心地よくする人。",
+      "Silence used wisely. 無言の使い手、かっこいい。"
+    ];
+
+    // レアメッセ（低確率）
+    const rare = [
+      "黄金の🐣を拾いました。+10 Luck, +1 Calm. ✨",
+      "Your vibe downloaded successfully on 5G. Dial-up era says hi. 📶",
+      "Horse loose in a hospital? You, however, are composed. 🐎🏥",
+      "Democracy sausage unlocked. 🌭（ご褒美休憩をどうぞ）"
+    ];
+
+    const tapBtn = document.getElementById('tapBtn');
+    const msgEl  = document.getElementById('msg');
+    const card   = document.getElementById('card');
+    const flash  = document.getElementById('flash');
+
+    // キーボード操作対応
+    document.addEventListener('keydown', (e)=>{
+      if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        next();
+      }
+    });
+    tapBtn.addEventListener('click', next);
+
+    function next(){
+      // 10%でレア、8%で「わっ！」いたずら、残りは通常
+      const r = Math.random();
+      if (r < 0.10){
+        setMessage(pick(rare));
+        sprinkleChicks(12);
+        gentleShake();
+      } else if (r < 0.18){
+        wowPrank();             // 「ワッ！」フラッシュ
+        sprinkleChicks(18);     // 🐣雨
+        gentleShake();
+      } else {
+        setMessage(pick(messages));
+        if (Math.random() < 0.25) gentleShake();
+      }
+    }
+
+    function setMessage(text){
+      msgEl.textContent = text;
+    }
+    function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+    function gentleShake(){
+      card.classList.remove('shake');
+      // リフローしてから付与（連続時に効かせる）
+      void card.offsetWidth;
+      card.classList.add('shake');
+    }
+
+    function wowPrank(){
+      flash.classList.add('show');
+      setTimeout(()=> flash.classList.remove('show'), 600);
+    }
+
+    function sprinkleChicks(n=10){
+      for(let i=0;i<n;i++){
+        const s = document.createElement('div');
+        s.className = 'chick';
+        s.textContent = Math.random() < .5 ? "🐣" : "🐣✨";
+        const left = Math.random()*100;
+        const delay = Math.random()*0.3;
+        s.style.left = left + 'vw';
+        s.style.animationDelay = delay + 's';
+        document.body.appendChild(s);
+        setTimeout(()=> s.remove(), 1400);
+      }
+    }
+  </script>
+</body>
+</html>
