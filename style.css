@@ -1,0 +1,61 @@
+body {
+  font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", sans-serif;
+  background-color: #fffbee;
+  color: #444;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  text-align: center;
+}
+
+.container {
+  margin-top: 15vh;
+}
+
+h1 {
+  font-size: 1.8em;
+  margin-bottom: 20px;
+  color: #555;
+}
+
+button {
+  font-size: 1.2em;
+  padding: 12px 25px;
+  background-color: #f9f2d0;
+  border: 2px solid #f0e3b2;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background-color: #fff2a8;
+  transform: scale(1.05);
+}
+
+#messageArea {
+  font-size: 1.2em;
+  margin-top: 25px;
+  color: #555;
+}
+
+/* 🐣 ひよこの雨アニメーション */
+.chick {
+  position: fixed;
+  top: -50px;
+  font-size: 2.5rem;
+  pointer-events: none;
+  animation: fall linear forwards;
+  opacity: 0.95;
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(360deg);
+    opacity: 0;
+  }
+}
